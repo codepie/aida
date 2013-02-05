@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<title>AIDA - Accurate Online Disambiguation of Entities</title>
+</head>
+<body>
+
+<h1 id="aida-accurateonlinedisambiguationofentities">AIDA - Accurate Online Disambiguation of Entities</h1>
+
+<p><a href="http://www.mpi-inf.mpg.de/yago-naga/aida/">AIDA</a> is the named entity disambiguation system created by the Databases and Information Systems Department at the <a href="http://www.mpi-inf.mpg.de/departments/d5/index.html">Max Planck Institute for Informatics in Saarbücken, Germany</a>. It identifies mentions of named entities (persons, organizations, locations, songs, products, &#8230;) in text and links them to a unique identifier. Most names are ambiguous, especially family names, and AIDA resolves this ambiguity. See the EMNLP 2011 publication [EMNLP2011] for a detailed description of how it works and the VLDB 2011 publication [VLDB2011] for a description of our Web demo.</p>
+
+<p>If you want to be notified about AIDA news or new releases, subscribe to our announcement mailing list by sending a mail to:</p>
+
+<pre><code>aida-news-subscribe@lists.mpi-inf.mpg.de
+</code></pre>
+
+<h2 id="introductiontoaida">Introduction to AIDA</h2>
+
+<p>AIDA is a framework and online tool for entity detection and disambiguation. Given a natural-language text, it maps mentions of ambiguous names onto canonical entities (e.g., individual people or places) registered in the <a href="http://www.yago-knowledge.org">YAGO2</a> [YAGO2] knowledge base. This knowledge is useful for multiple tasks, for example:</p>
+
+<ul>
+<li>Build an entity index. This allows one kind of semantic search, retrieve all documents where a given entity was mentioned.</li>
+<li>Extract knowledge about the entities, for example relations between entities mention in the text.</li>
+</ul>
+
+<p>YAGO2 entities have a one-to-one correspondence to Wikipedia pages, thus each disambiguated entity also denotes a Wikipedia URL.</p>
+
+<p>Note that AIDA does not annotate common words (like song, musician, idea, &#8230; ). Also, AIDA does not identify mentions that have no entity in the repository. Once a name is in the dictionary containing all candidates for surface strings, AIDA will map to the best possible candidate, even if the correct one is not in the entity repository</p>
+
+<h2 id="requirements">Requirements</h2>
+
+<p>AIDA needs a <a href="http://www.postgresql.org">Postgres</a> database to run. We tested it starting from version 8.4, but version 9.2 will give a better performance for many queries AIDA runs, due to the ability to fetch data from the indexes.</p>
+
+<p>The machine AIDA runs on should have a reasonable amount of main memory. If you are using graph coherence (see the Section <em>Configuring AIDA</em>), the amount of memory grows quadratically with the number of entities and thus the length of the document. Anything above 10,000 candidates will be too much for a regular desktop machine (at the time of writing) to handle and should run on a machine with more than 20GB of main memory. AIDA does the most intensive computations in parallel and thus benefits from multi-core machine.</p>
+
+<h2 id="settinguptheentityrepository">Setting up the Entity Repository</h2>
+
+<p>AIDA was developed to disambiguate to the <a href="http://www.yago-knowledge.org">YAGO2</a> knowledge base, returning the YAGO2 identifier for disambiguated entities. However, you can use AIDA for any entity repository, given that you have keyphrases and weights for all entities. The more common case is to use AIDA with YAGO2. If you want to set it up with your own repository, see the Advanced Configuration section.</p>
+
+<p>To use AIDA with YAGO2, download the repository we provide on our <a href="http://www.mpi-inf.mpg.de/yago-naga/aida/">AIDA website</a> as a Postgres dump and import it into your database server. This will take some time, maybe even a day depending on the speed of the machine Postgres is running on. Once the import is done, you can start using AIDA immediately by adjusting the <code>settings/database_aida.properties</code> to point to the database. AIDA will then use nearly 3 million named entities harvested from Wikipedia for disambiguation.</p>
+
+<p>Get the Entity Repository:</p>
+
+<pre><code>curl -O http://www.mpi-inf.mpg.de/yago-naga/aida/download/entity-repository/AIDA_entity_repository_2010-08-17.sql.bz2
+</code></pre>
+
+<p>Import it into a postgres database:</p>
+
+<pre><code>bzcat AIDA_entity_repository_2010-08-17.sql.bz2 | psql &lt;DATABASE&gt;
+</code></pre>
+
+<p>where <DATABASE> is a database on a PostgreSQL server.</p>
+
+<h2 id="settingupaida">Setting up AIDA</h2>
+
+<p>To build aida, run <code>ant</code> (See <a href="http://ant.apache.org">Apache Ant</a>) in the directory of the cloned repository. This will create an aida.jar including all dependencies.</p>
+
+<p>The main configuration is done in the files in the <code>settings/</code> directory. The following files can be adjusted:</p>
+
+<ul>
+<li><code>aida.properties</code>: take the <code>sample_settings/aida.properties</code> and adjust it accordingly. The default values are reasonable, so if you don&#8217;t want to change anything, the file is not needed at all.</li>
+<li><code>database_aida.properties</code>: take the <code>sample_settings/database_aida.properties</code>, put it here and adjust it accordingly. The settings should point to the Postgres database server that holds the entity repository - how to set this up is explained below.</li>
+</ul>
+
+<h2 id="hands-onapiexample">Hands-On API Example</h2>
+
+<p>The main classes in AIDA are <code>mpi.aida.Preparator</code> for preparing an input document and <code>mpi.aida.Disambiguator</code> for running the disambiguation on the prepared input. A minimal call looks like this:</p>
+
+<pre><code>// Define the input.
+String inputText = &quot;When [[Page]] played Kashmir at Knebworth, his Les Paul was uniquely tuned.&quot;;
+
+// Prepare the input for disambiguation. The Stanford NER will be run
+// to identify names. Strings marked with [[ ]] will also be treated as names.
+PreparationSettings prepSettings = new StanfordHybridPreparationSettings();
+Preparator p = new Preparator();
+PreparedInput input = p.prepare(&quot;document_id&quot;, inputText, prepSettings);
+
+// Disambiguate the input with the graph coherence algorithm.
+DisambiguationSettings disSettings = new CocktailPartyDisambiguationSettings();    
+Disambiguator d = new Disambiguator(input, disSettings);
+DisambiguationResults results = d.disambiguate();
+
+// Print the disambiguation results.
+for (ResultMention rm : results.getResultMentions()) {
+  ResultEntity re = results.getBestEntity(rm);
+  System.out.println(rm.getMention() + &quot; -&gt; &quot; + re +
+  &quot; (&quot; + AidaManager.getWikipediaUrl(re) + &quot;)&quot;);
+}
+</code></pre>
+
+<p>The <code>ResultEntity</code> contains the AIDA ID via the <code>getEntity()</code> method. This can be transformed into a Wikipedia URL by calling <code>AidaManager.getWikipediaUrl()</code> for the result entity.</p>
+
+<p>See the <code>mpi.aida.config.settings.disambiguation</code> package for all possible predefined configurations, passed to the <code>Disambiguator</code>:</p>
+
+<ul>
+<li><code>PriorOnlyDisambiguationSettings</code>: Annotate each mention with the most prominent entity.</li>
+<li><code>LocalDisambiguationSettings</code>: Use the entity prominence and the keyphrase-context similarity to disambiguate.</li>
+<li><code>CocktailPartyDisambiguationSettings</code>: Use a graph algorithm on the entity coherence graph ([MilneWitten] link coherence) to disambiguate.</li>
+<li><code>CocktailPartyKOREDisambiguationSettings</code>: Use a graph algorithm on the entity coherence graph ([KORE] link coherence) to disambiguate.</li>
+</ul>
+
+<h2 id="hands-oncommandlinecallexample">Hands-On Command Line Call Example</h2>
+
+<ol>
+<li><p>Build AIDA:</p>
+
+<p><code>ant</code></p></li>
+<li><p>Run the CommandLineDisambiguator:</p>
+
+<p><code>java -Xmx4G -cp aida.jar mpi.aida.CommandLineDisambiguator GRAPH &lt;INPUT-FILE&gt;</code></p></li>
+</ol>
+
+<p><code>&lt;INPUT-FILE&gt;</code> is path to the text file to be annotated with entities. The format for <code>&lt;INPUT-FILE&gt;</code> should be plain text with UTF&#8211;8 encoding.</p>
+
+<p>Instead of <code>GRAPH</code>, you can put one of the following, corresponding to the settings described above:</p>
+
+<ul>
+<li><code>PRIOR</code>: PriorOnlyDisambiguationSettings</li>
+<li><code>LOCAL</code>: LocalDisambiguationSettings</li>
+<li><code>GRAPH</code>: CocktailPartyDisambiguationSettings</li>
+<li><code>GRAPH-KORE</code>: CocktailPartyKOREDisambiguationSettings</li>
+</ul>
+
+<p>The output will be an HTML file with annotated mentions, linking to the corresponding Wikipedia page.</p>
+
+<h2 id="inputformat">Input Format</h2>
+
+<p>The input of AIDA is a text (as Java String) or file in UTF&#8211;8 encoding. By default, named entities are recognized by the Stanford NER component of the <a href="http://nlp.stanford.edu/software/corenlp.shtml">CoreNLP</a> tool suite. In addition, mentions can be marked up by square brackets, as in this example &#8220;Page&#8221;:</p>
+
+<pre><code>When [[Page]] played Kashmir at Knebworth, his Les Paul was uniquely tuned.
+</code></pre>
+
+<p>The mention recognition can be configured by using different <code>PreparationSettings</code> in the <code>mpi.aida.config.settings.preparation</code> package:</p>
+
+<ul>
+<li><code>StanfordHybridPreparationSettings</code>: Use Stanford CoreNLP NER and allow manual markup using [[&#8230;]]</li>
+<li><code>StanfordManualPreparationSettings</code>: Use Stanford CoreNLP only for tokenization and sentence splitting, mentions need to be marked up by [[&#8230;]].</li>
+</ul>
+
+<p>The <code>PreparationSettings</code> are passed to the <code>Preparator</code>, see the Hands-On API Example.</p>
+
+<h2 id="advancedconfiguration">Advanced Configuration</h2>
+
+<h3 id="configuringthedisambiguationsettings">Configuring the DisambiguationSettings</h3>
+
+<p>The <code>mpi.aida.config.settings.DisambiguationSettings</code> contain all the configurations for the weight computation of the disambiguation graph. The best way to configure the DisambiguationSettings for constructing the disambiguation graph is to use one of the predefined settings objects in the <code>mpi.aida.config.settings.disambiguation</code> package, see below.</p>
+
+<h3 id="pre-configureddisambiguationsettings">Pre-configured DisambiguationSettings</h3>
+
+<p>These pre-configured <code>DisambiguatorSettings</code> objects can be passed to the <code>Disambiguator</code>:</p>
+
+<ul>
+<li><code>PriorOnlyDisambiguationSettings</code>: Annotate each mention with the most prominent entity.</li>
+<li><code>LocalDisambiguationSettings</code>: Use the entity prominence and the keyphrase-context similarity to disambiguate.</li>
+<li><code>CocktailPartyDisambiguationSettings</code>: Use a graph algorithm on the entity coherence graph ([MilneWitten] link coherence) to disambiguate.</li>
+<li><code>CocktailPartyKOREDisambiguationSettings</code>: Use a graph algorithm on the entity coherence graph ([KORE] link coherence) to disambiguate.</li>
+</ul>
+
+<h4 id="disambiguationsettingsparameters">DisambiguationSettings Parameters</h4>
+
+<p>The principle parameters are (corresponding to all the instance variables of the <code>DisambiguationSettings</code> object):</p>
+
+<ul>
+<li><code>alpha</code>: Balances the mention-entity edge weights (alpha) and the entity-entity edge weights (1-alpha).</li>
+<li><code>disambiguationTechnique</code>: Technique to solve the disambiguation graph with. Most commonly this is LOCAL for mention-entity similarity edges only and GRAPH to include the entity coherence.</li>
+<li><code>disambiguationAlgorithm</code>: If TECHNIQUE.GRAPH is chosen above, this specifies the algorithm to solve the disambiguation graph. Can be COCKTAIL_PARTY for the full disambiguation graph and COCKTAIL_PARTY_SIZE_CONSTRAINED for a heuristically pruned graph.</li>
+<li><code>useExhaustiveSearch</code>: Set to true to use exhaustive search in the final solving stage of ALGORITHM.COCKTAIL_PARTY. Set to false to do a hill-climbing search from a random starting point.</li>
+<li><code>useNormalizedObjective</code>: Set to true to normalize the minimum weighted degree in the ALGORITHM.COCKTAIL_PARTY by the number of graph nodes. This prefers smaller solutions.</li>
+<li><code>entitiesPerMentionConstraint</code>: Number of candidates to keep for for ALGORITHM.COCKTAIL_PARTY_SIZE_CONSTRAINED.</li>
+<li><code>useCoherenceRobustnessTest</code>: Set to true to enable the coherence robustness test, fixing mentions with highly similar prior and similarity distribution to the most promising candidate before running the graph algorithm.</li>
+<li><code>cohRobustnessThreshold</code>: Threshold of the robustness test, below which the the L1-norm between prior and sim results in the fixing of the entity candidate.</li>
+<li><code>similaritySettings</code>: Settings to compute the edge-weights of the disambiguation graph. Details see below.</li>
+<li><code>coherenceSimilaritySetting</code>: Settings to compute the initial mention-entity edge weights when using coherence robustness.</li>
+</ul>
+
+<p>The edge weights of the disambiguation graph are configured in the <code>similaritySettings</code> object of <code>DisambiguationSettings</code>. They have a major impact on the outcome of the disambiguation.</p>
+
+<h4 id="similaritysettingsparameters">SimilaritySettings Parameters</h4>
+
+<ul>
+<li><code>mentionEntitySimilarities</code>: a list of mention-entity similarity triples. The first one is the SimilarityMeasure, the second the EntitiesContext, the third the weight of this mentionEntitySimilarity. Note that they need to add up to 1.0, including the number for the priorWeight option. If loading from a file, the triples are separated by &#8220;:&#8221;. The mentionEntitySimilarities option also allows to enable or disable the first or second half of the mention-entity similarities based on the priorThreshold option. If this is present, the first half of the list is used when the prior is disable, the second one when it is enabled. Note that still the whole list weights need to sum up to 1 with the prior, the EnsembleMentionEntitySimilarity class will take care of appropriate re-scaling.</li>
+<li><code>priorWeight</code>: The weight of the prior probability. Needs to sum up to 1.0 with all weights in mentionEntitySimilarities.</li>
+<li><code>priorThreshold</code>: If set, the first half of mentionEntitySimilarities will be used for the mention-entity similarity when the best prior for an entity candidate is below the given threshold, otherwise the second half of the list together with the prior is used.</li>
+<li><code>entityEntitySimilarity</code>: The name and the weight of the entity-entity similarity to use, as pairs of name and weight. If loading from a file, the pairs are &#8220;:&#8221;-separated.</li>
+</ul>
+
+<p>Take our default configuration as example (in File syntax):</p>
+
+<pre><code>mentionEntitySimilarities = UnnormalizedKeyphrasesBasedMISimilarity:KeyphrasesContext:1.4616111666431395E-5 UnnormalizedKeyphrasesBasedIDFSimilarity:KeyphrasesContext:4.291375037765039E-5 UnnormalizedKeyphrasesBasedMISimilarity:KeyphrasesContext:0.15586170799823845 UnnormalizedKeyphrasesBasedIDFSimilarity:KeyphrasesContext:0.645200419577534
+priorWeight = 0.19888034256218348
+priorThreshold = 0.9
+entityEntitySimilarity = MilneWittenEntityEntitySimilarity:1.0
+</code></pre>
+
+<p>It is possible to create a SimilaritySettings object programmatically, however we recommend using the preconfigured settings in the <code>mpi.aida.config.settings.disambiguation</code> package.</p>
+
+<h3 id="adjustingthestopwords">Adjusting the StopWords</h3>
+
+<p>If you want to add your own stopwords, you can add them to <code>settings/tokens/stopwords6.txt</code>.</p>
+
+<h3 id="usingaidawithyourownentityrepository">Using AIDA with your own Entity Repository</h3>
+
+<p>You can deploy AIDA with any set of named entities, given that you have descriptive keyphrases and weights for them. The database layout has to conform to the one described here. For a good example instance of all the data please download the YAGO2-based AIDA entity repository from our website.</p>
+
+<h4 id="databasetables">Database Tables</h4>
+
+<p>The mandatory database tables are:</p>
+
+<ul>
+<li>dictionary</li>
+<li>entity_ids</li>
+<li>entity_keyphrases</li>
+<li>keyword_counts</li>
+<li>word_ids</li>
+<li>word_expansion</li>
+</ul>
+
+<p>Each one is described in detail below, starting with the table name plus column names and SQL types.</p>
+
+<pre><code>dictionary (
+  mention text, entity integer, prior double precision
+)
+</code></pre>
+
+<p>The <em>dictionary</em> is used for looking up <em>entity</em> candidates for a given surface form of a <em>mention</em>. Each mention-entity pair can have an associated prior probability. Mentions with the length of 4 characters or more are case-conflated to all-upper case. Also, mentions are normalized using the YAGO2 basics.Normalize.string() method (included as a jar.). To get the original mentoin string, use basics.Normalize.unString().</p>
+
+<pre><code>entity_ids (
+  entity text, id integer
+)
+</code></pre>
+
+<p>This table is used for mapping the integer ids to a human-readable entity representation. In the existing repository, entities are encoded using the basics.Normalize.entity() method. To get the original entity name (as taken from Wikipedia), use basics.Normalize.unEntity().</p>
+
+<pre><code>keyword_counts (
+  keyword integer, count integer
+)
+</code></pre>
+
+<p>The counts should reflect the number of times the given keyword occurs in the collection and is used to compute the IDF weight for all keywords. This means high counts will result in low weights.</p>
+
+<pre><code>word_ids (
+  word text, id integer
+)
+</code></pre>
+
+<p>All keyphrase and keyword ids must be present here. The input text will be transformed using the table and then matched against all entity keyphrases.</p>
+
+<pre><code>word_expansion (
+  word integer, expansion integer
+)
+</code></pre>
+
+<p>AIDA tries to match ALL_CAPS variants of mixed-case keywords. Put the ids of the UPPER_CASED word it in this table.</p>
+
+<pre><code>entity_keyphrases (
+  entity integer, keyphrase integer, keyphrase_tokens integer[], source character varying(100), count integer, weight double precision DEFAULT 1.0, keyphrase_token_weights double precision[]
+)
+</code></pre>
+
+<p>This is the meat of AIDA. All entities are associated with (optionally weighted) keyphrases, represented by an integer id. As the keyphrases are matched partially against input text, the (weighted) <em>keyphrase_tokens</em> are stored alongside each keyphrase. The mandatory fields are:</p>
+
+<ul>
+<li>entity: The id corresponds to the id in the <em>dictionary</em> and the <em>entity_ids</em> table.</li>
+<li>keyphrase: The id corresponds to the id in the <em>word_ids</em> table.</li>
+<li>keyphrase_tokens: Each id in the array corresponds to one word in the <em>word_ids</em> table.</li>
+<li>keyphrase_token_weights: Each entry in the double array is the entity-specific weight of the keyword at the same position as <em>keyphrase_tokens</em>.</li>
+</ul>
+
+<p>The optional fields are:</p>
+
+<ul>
+<li>source: Keyphrases can be filtered by source</li>
+<li>count: This can be used to keep the co-occurrence counts of the entity-keyphrase pairs, but is superflous if all the weights are pre-computed</li>
+<li>weight: AIDA can use keyphrase weights but by default does not.</li>
+</ul>
+
+<h4 id="optionaltables">Optional Tables</h4>
+
+<pre><code>entity_inlinks (
+  entity integer, inlinks integer[]
+)
+</code></pre>
+
+<p>If you want to use coherence based on a link graph (<em>MilneWittenEntityEntitySimilarity</em>) instead of keyphrases (<em>KOREEntityEntitySimilarity</em>), this table needs to be populated with all entities and their inlinks.</p>
+
+<h2 id="comparingyournedalgorithmagainstaida">Comparing Your NED Algorithm against AIDA</h2>
+
+<h3 id="configuringaida">Configuring AIDA</h3>
+
+<p>To get the best results for AIDA, please use the <code>mpi.aida.config.settings.disambiguation.CocktailPartyDisambiguationSettings</code> for the Disambiguator, as described in <em>Pre-configured DisambiguationSettings</em> . You can also compare your results on the datasets where we already ran AIDA, see below.</p>
+
+<h3 id="availabledatasets">Available Datasets</h3>
+
+<p>There are two main datasets we created to do research on AIDA. Both are available on the <a href="http://www.mpi-inf.mpg.de/yago-naga/aida/">AIDA website</a>.</p>
+
+<ul>
+<li>CONLL-YAGO: A collection of 1393 Newswire documents from the Reuters RCV&#8211;1 collection. All names are annotated with their respective YAGO2 entities. We make the annotations available for research purposes, however the Reuters RCV&#8211;1 collection must be purchased to use the dataset.</li>
+<li>KORE50: A collection of 50 handcrafted sentences from 5 different domains.</li>
+</ul>
+
+<p>We provide readers for these two datasets in the <code>mpi.experiment.reader</code> package which will produce <code>PreparedInput</code> objects for each document in the collection. See the respective <code>CoNLLReader</code> and <code>KORE50Reader</code> classes for the location of the data.</p>
+
+<h2 id="furtherinformation">Further Information</h2>
+
+<p>If you are using AIDA, any parts of it or any datasets we made available, please give us credit by referencing AIDA in your work. If you are publishing scientific work based on AIDA, please cite our [EMNLP2011] paper referenced at the end of this document.</p>
+
+<ul>
+<li>Our AIDA project website: <a href="http://www.mpi-inf.mpg.de/yago-naga/aida/">http://www.mpi-inf.mpg.de/yago-naga/aida/</a></li>
+<li>Our news mailing list: Mail to <a href="&#x6d;&#x61;&#x69;&#108;&#116;&#111;&#58;&#97;&#x69;&#x64;&#97;&#x2d;&#110;&#101;&#x77;&#x73;&#x2d;&#x73;&#117;&#98;&#x73;&#x63;&#x72;&#x69;&#98;&#x65;&#x40;&#108;&#105;&#x73;&#x74;&#115;&#46;&#x6d;&#112;&#x69;&#x2d;&#x69;&#x6e;&#x66;&#x2e;&#109;&#x70;&#103;&#x2e;&#x64;&#101;">&#x61;&#105;&#x64;&#x61;&#x2d;&#110;&#101;&#119;&#115;&#45;&#115;&#117;&#x62;&#115;&#99;&#x72;&#105;&#x62;&#x65;&#x40;&#108;&#105;&#x73;&#116;&#x73;&#x2e;&#x6d;&#x70;&#105;&#x2d;&#105;&#x6e;&#x66;&#x2e;&#109;&#x70;&#x67;&#x2e;&#x64;&#x65;</a> to get news and updates about releases.</li>
+</ul>
+
+<h2 id="developers">Developers</h2>
+
+<p>The AIDA developers are (in alphabetical order):</p>
+
+<ul>
+<li>Ilaria Bordino</li>
+<li>Johannes Hoffart ( http://www.mpi-inf.mpg.de/~jhoffart )</li>
+<li>Edwin Lewis-Kelham</li>
+<li>Dat Ba Nguyen ( http://www.mpi-inf.mpg.de/~datnb )</li>
+<li>Mohamed Amir Yosef ( http://www.mpi-inf.mpg.de/~mamir )</li>
+</ul>
+
+<h2 id="license">License</h2>
+
+<p>AIDA by Max-Planck-Institute for Informatics, Databases and Information Systems is licensed under a Creative Commons Attribution-NonCommercial-ShareAlike 3.0 Unported License.</p>
+
+<h2 id="includedsoftware">Included Software</h2>
+
+<p>We thank the authors of the following pieces of software, without which the
+development of AIDA would not have been possible:</p>
+
+<ul>
+<li>Apache Commons, all licensed under Apache 2.0
+
+<ul>
+<li>cli, collections, io, lang</li>
+</ul></li>
+<li>MPI D5 utilities, all licensed under CC-BY 3.0
+
+<ul>
+<li>basics2, javatools, mpi-DBManager</li>
+</ul></li>
+<li>JavaEWAH, licensed under Apache 2.0</li>
+<li>JUnit, licensed under CPL 1.0</li>
+<li>log4j, licensed under Apache 2.0</li>
+<li>postgresql-jdbc, licensed under the BSD License</li>
+<li>slf4j, licensed under MIT License</li>
+<li>Stanford CoreNLP, licensed under the GPL v2
+
+<ul>
+<li>Dependencies:
+
+<ul>
+<li>jgrapht, licensed under LGPL v2.1</li>
+<li>xom, licensed under LGPL v2.1</li>
+<li>joda-time, licensed under Apache 2.0</li>
+</ul></li>
+</ul></li>
+<li>Trove, licensed under the LGPL, parts under a license by CERN</li>
+</ul>
+
+<h3 id="licensesofincludedsoftware">Licenses of included Software</h3>
+
+<p>All licenses can be found in the licenses/ directory or at the following URLs:</p>
+
+<ul>
+<li>Apache License 2.0: http://www.apache.org/licenses/LICENSE&#8211;2.0</li>
+<li>Creative Commons CC-BY 3.0: http://creativecommons.org/licenses/by/3.0/</li>
+<li>GNU GPL v2: http://www.gnu.org/licenses/gpl&#8211;2.0.html</li>
+<li>GNU LGPL v2.1: http://www.gnu.org/licenses/lgpl&#8211;2.1.html</li>
+</ul>
+
+<h2 id="citingaida">Citing AIDA</h2>
+
+<p>If you use AIDA in your research, please cite AIDA:</p>
+
+<pre><code>@inproceedings{AIDA2011,
+  author = {Hoffart, Johannes and Yosef, Mohamed Amir and Bordino, Ilaria and F{\&quot;u}rstenau, Hagen and Pinkal, Manfred and Spaniol, Marc and Taneva, Bilyana and Thater, Stefan and Weikum, Gerhard},
+  title = {{Robust Disambiguation of Named Entities in Text}},
+  booktitle = {Conference on Empirical Methods in Natural Language Processing, EMNLP 2011, Edinburgh, Scotland},
+  year = {2011},
+  pages = {782--792}
+}
+</code></pre>
+
+<h2 id="references">References</h2>
+
+<ul>
+<li>[EMNLP2011]: J. Hoffart, M. A. Yosef, I. Bordino, H. Fürstenau, M. Pinkal, M. Spaniol, B. Taneva, S. Thater, and G. Weikum, &#8220;Robust Disambiguation of Named Entities in Text,&#8221; Conference on Empirical Methods in Natural Language Processing, EMNLP 2011, Edinburgh, Scotland, 2011, pp. 782–792.</li>
+<li>[VLDB2011]: M. A. Yosef, J. Hoffart, I. Bordino, M. Spaniol, and G. Weikum, “AIDA: An Online Tool for Accurate Disambiguation of Named Entities in Text and Tables,” Proceedings of the 37th International Conference on Very Large Databases, VLDB 2011, Seattle, WA, USA, 2011, pp. 1450–1453.</li>
+<li>[YAGO2]: J. Hoffart, F. M. Suchanek, K. Berberich, and G. Weikum, “YAGO2: A spatially and temporally enhanced knowledge base from Wikipedia,” Artificial Intelligence, vol. 194, pp. 28–61, 2013.</li>
+<li>[MilneWiten]: D. Milne and I. H. Witten, “An Effective, Low-Cost Measure of Semantic Relatedness Obtained from Wikipedia Links,” Proceedings of the AAAI 2008 Workshop on Wikipedia and Artificial Intelligence (WIKIAI 2008), Chicago, IL, 2008.</li>
+<li>[KORE]: J. Hoffart, S. Seufert, D. B. Nguyen, M. Theobald, and G. Weikum, “KORE: Keyphrase Overlap Relatedness for Entity Disambiguation,” Proceedings of the 21st ACM International Conference on Information and Knowledge Management, CIKM 2012, Hawaii, USA, 2012, pp. 545–554.</li>
+</ul>
+
+</body>
+</html>

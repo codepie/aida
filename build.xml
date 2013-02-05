@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE project>
+<project name="aida" default="fat-dist" basedir=".">	
+	<description>
+		Compile, test, generate a jar or run the rmi service for AIDA.
+	</description>
+
+	<property name="src" location="./src" />
+	<property name="src-test" location="./test" />
+	<property name="build" location="./bin" />
+	<property name="external_jars" location="./lib" />
+	<property name="created_jars" location="./" />
+	<property name="resources" location="./resources" />
+	<property name="test.reports" location="./reports" />
+	<property environment="env" />
+
+	<target name="init">
+		<!-- Creates the time stamp. -->
+		<tstamp />
+		<!-- Creates the build directory structure used by build. -->
+		<mkdir dir="${build}" />
+	</target>
+
+	<target name="compile" depends="init" 
+		description="Compiles the project.">
+		<javac includeJavaRuntime="true" includeAntRuntime="false" srcdir="${src}" debug="yes" destdir="${build}">
+			<classpath>
+				<pathelement location="./" />
+				<fileset dir="${external_jars}">
+					<include name="*.jar" />
+				</fileset>
+				<pathelement path="${build}" />
+			</classpath>
+		</javac>
+		<copy todir="${build}">
+			<fileset dir="${resources}">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="dist" depends="compile" 
+		description="Generate the slim jar file.">
+		<jar jarfile="${created_jars}/aida.jar" basedir="${build}" />
+	</target>
+
+	<target name="fat-dist" depends="compile" 
+			description="Generate the fat jar file with all dependencies.">
+		<jar jarfile="${created_jars}/aida.jar" basedir="${build}">
+			<zipgroupfileset dir="${external_jars}" includes="*.jar"/>
+		</jar>
+	</target>
+
+	<target name="clean" 
+		description="Cleans up the build path.">
+		<delete dir="${build}" />
+	</target>
+
+	<target name="cleanall" description="Cleans up the bins and jars.">
+		<delete dir="${build}" />
+		<delete file="${created_jars}/aida.jar" />
+	</target>
+
+	<target name="rmi-service" 
+		description="AIDA RMI service.">
+		<java classname="mpi.aida.service.AidaRMIService" 
+			fork="true" spawn="false">
+			<jvmarg value="-Xmx45000M" />
+			<classpath>
+				<pathelement location="./" />
+				<fileset dir="${created_jars}">
+					<include name="*.jar" />
+				</fileset>
+				<fileset dir="${external_jars}">
+					<include name="*.jar" />
+				</fileset>
+				<fileset dir="${resources}">
+					<include name="*.properties" />
+				</fileset>
+			</classpath>
+		</java>
+	</target>
+
+	<target name="run" depends="cleanall,dist,rmi-service" 
+		description="Cleans, compiles, and runs the rmi service.">
+	</target>
+
+	<target name="compile-test" depends="init,compile" 
+		description="Compiles the unit tests.">
+		<javac includeantruntime="false" srcdir="${src-test}" debug="yes" destdir="${build}">
+			<classpath>
+				<pathelement location="./" />
+				<fileset dir="${external_jars}">
+					<include name="*.jar" />
+				</fileset>
+				<pathelement path="${build}" />
+			</classpath>
+		</javac>
+		<copy todir="${build}">
+			<fileset dir="${src-test}">
+				<exclude name="**/*.java" />
+			</fileset>
+		</copy>
+	</target>
+	
+	<target name="test" depends="compile-test" description="Run JUnit.">
+		<delete dir="${test.reports}" />
+		<mkdir dir="${test.reports}" />
+		<junit maxmemory="2G" printsummary="yes" fork="yes" haltonfailure="no">
+			<classpath>
+				<pathelement location="./" />
+				<fileset dir="${external_jars}">
+					<include name="*.jar" />
+				</fileset>
+				<pathelement path="${build}" />
+			</classpath>
+			
+			<formatter type="xml" />
+
+			<batchtest todir="${test.reports}">
+				<fileset dir="${src-test}">
+					<include name="**/*Test.java" />
+				</fileset>
+			</batchtest>
+		</junit>
+		<echo message="JUnit tests done, results are in ${test.reports}" />
+	</target>
+
+</project>
