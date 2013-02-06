@@ -278,8 +278,7 @@ AIDA by Max-Planck-Institute for Informatics, Databases and Information Systems 
 
 ## Included Software
 
-We thank the authors of the following pieces of software, without which the
-development of AIDA would not have been possible:
+We thank the authors of the following pieces of software, without which the development of AIDA would not have been possible. The included software is available under different licenses than the AIDA source code, namely:
 
 * Apache Commons, all licensed under Apache 2.0
 	* cli, collections, io, lang
