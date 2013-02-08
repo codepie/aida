@@ -56,7 +56,9 @@ public class AidaConfig {
       properties.load(new FileReader(new File(path)));
     } catch (Exception e) {
       properties = new Properties();
-      logger.error(e.getLocalizedMessage());
+      logger.error("Main settings file missing. " +
+      		"Copy 'sample_settings/aida.properties' to the 'settings/' " +
+      		"directory and adjust it.");
     }
   }
 
