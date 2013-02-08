@@ -13,7 +13,6 @@ import mpi.experiment.trace.Tracer;
  * This class calculates the similarity between a mention and an
  * entity context by a dot product between the word count vectors.
  * 
- * @author Johannes Hoffart
  *
  */
 public class WordCountVectorDotProductSimilarityMeasure extends MentionEntitySimilarityMeasure {

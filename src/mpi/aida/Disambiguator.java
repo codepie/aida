@@ -35,8 +35,6 @@ import org.slf4j.LoggerFactory;
  * Main class for running the disambiguation. Is thread-safe and can be
  * run in parallel.
  * 
- * @author Johannes Hoffart
- *
  */
 public class Disambiguator implements Runnable {
   private static final Logger logger = 

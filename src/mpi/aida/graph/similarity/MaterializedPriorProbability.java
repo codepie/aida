@@ -19,7 +19,6 @@ import mpi.aida.access.DataAccess;
  * main method, it will create another table in the YAGO2 database which can
  * then be used by this class. 
  *    
- * @author Johannes Hoffart
  *
  */
 public class MaterializedPriorProbability extends PriorProbability {

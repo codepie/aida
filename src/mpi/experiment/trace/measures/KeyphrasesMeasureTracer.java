@@ -9,15 +9,8 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import mpi.aida.AidaManager;
 import mpi.aida.access.DataAccess;
-import mpi.tokenizer.data.Token;
-import mpi.tokenizer.data.Tokens;
 
-/**
- * @author mamir
- *
- */
 public class KeyphrasesMeasureTracer extends MeasureTracer {
 	public static int countForUI = 0;
 

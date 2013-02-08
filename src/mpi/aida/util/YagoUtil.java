@@ -20,7 +20,6 @@ import basics.Normalize;
  * This class contains some convenience wrappers for accessing YAGO data.
  * It has to use DataAccess and MUST NOT access the DB directly!
  * 
- * @author Johannes Hoffart
  *
  */
 public class YagoUtil {

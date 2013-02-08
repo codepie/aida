@@ -19,7 +19,6 @@ import org.junit.Test;
 /**
  * Testing against the predefined DataAccessForTesting.
  * 
- * @author Johannes Hoffart
  */
 public class DisambiguatorTest {
   public static final double DEFAULT_ALPHA = 0.6;

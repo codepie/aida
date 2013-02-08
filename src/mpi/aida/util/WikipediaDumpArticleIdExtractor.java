@@ -11,7 +11,6 @@ import javatools.util.FileUtils;
  * Output format is:
  * article_title<TAB>id
  * 
- * @author Johannes Hoffart
  *
  */
 public class WikipediaDumpArticleIdExtractor {

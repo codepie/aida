@@ -16,7 +16,6 @@ import mpi.experiment.trace.Tracer;
  * Calculates the similarity of two contexts by the cosine similarity
  * of their tf.idf weighted term vectors.
  * 
- * @author Johannes Hoffart
  *
  */
 public class TfIdfCosineSimilarityMeasure extends MentionEntitySimilarityMeasure {

@@ -23,7 +23,6 @@ import mpi.aida.data.Entity;
  * It uses the 'hasInternalWikipediaLinkTo' and 'hasAnchorText' relations
  * in the YAGO2 database.
  * 
- * @author Johannes Hoffart
  *
  */
 public abstract class PriorProbability {

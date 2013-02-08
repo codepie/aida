@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
  * Collection of different ways to compute keyphrase weights based on the
  * associativity to the respective entity.
  * 
- * @author Johannes Hoffart
  *
  */
 public class WeightComputation {

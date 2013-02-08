@@ -20,7 +20,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Similarity of two entities is the number of common inlinks
  * 
- * @author Johannes Hoffart
  *
  */
 public class InlinkOverlapEntityEntitySimilarity extends EntityEntitySimilarity {

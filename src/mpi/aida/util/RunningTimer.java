@@ -13,7 +13,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * A module is usually a class and a stage is usually one logical
  * step inside the class.
  * 
- * @author Johannes Hoffart
  *
  */
 public class RunningTimer {

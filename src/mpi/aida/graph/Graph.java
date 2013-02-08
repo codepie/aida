@@ -9,11 +9,6 @@ import java.util.Arrays;
 
 import mpi.aida.data.Mention;
 
-/**
- * @author Mohamed Amir Yosef
- *
- */
-
 public class Graph {
 	private String name;
 	protected int nodesCount;

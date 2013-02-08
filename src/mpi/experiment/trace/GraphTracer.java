@@ -18,10 +18,6 @@ import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 
-/**
- * @author mamir
- * 
- */
 public class GraphTracer {
 	public enum TracingTarget {
 		STATIC, WEB_INTERFACE

@@ -8,7 +8,6 @@ import mpi.aida.data.Entity;
  * Abstract class for all contexts containing solely integer ids 
  * representing tokens. 
  * 
- * @author Johannes Hoffart
  *
  */
 public abstract class TextContext extends EntitiesContext {

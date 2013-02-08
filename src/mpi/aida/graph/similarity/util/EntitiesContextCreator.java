@@ -14,7 +14,6 @@ import mpi.aida.graph.similarity.context.EntitiesContext;
  * Caches entity contexts based on the context id and document id.
  * Assumes distinct document ids and caches up to ecc contexts.
  * 
- * @author Johannes Hoffart
  *
  */
 public class EntitiesContextCreator {

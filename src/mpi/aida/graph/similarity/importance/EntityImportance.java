@@ -9,7 +9,6 @@ import mpi.aida.data.Entity;
  * This class serves as way to get the importance of an entity
  * with regard to the complete collection, not to a specific mention (such as prior probability)
  * 
- * @author Johannes Hoffart
  *
  */
 public abstract class EntityImportance {

@@ -60,7 +60,6 @@ import org.slf4j.LoggerFactory;
  *   - The name and the weight of the entity-entity similarity to use, 
  *   ":" separated.
  * 
- * @author Johannes Hoffart
  *
  */
 public class SimilaritySettings implements Serializable {

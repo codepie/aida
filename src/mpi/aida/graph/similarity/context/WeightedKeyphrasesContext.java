@@ -22,7 +22,6 @@ import org.slf4j.LoggerFactory;
 /**
  * Extends the KeyphrasesContext with keyphrase MI/IDF weights
  * 
- * @author Johannes Hoffart
  *
  */
 public class WeightedKeyphrasesContext extends KeyphrasesContext {

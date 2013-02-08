@@ -6,7 +6,6 @@ import gnu.trove.map.hash.TIntObjectHashMap;
 /**
  * Holds all the keyphrase data describing a set of entities.
  * 
- * @author Johannes Hoffart
  *
  */
 public class Keyphrases {

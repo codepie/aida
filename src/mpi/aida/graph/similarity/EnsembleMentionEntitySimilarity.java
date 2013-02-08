@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
  * The prior probability of a mention-entity pair can also be used, and should
  * generally improve results.
  * 
- * @author Johannes Hoffart
  *
  */
 public class EnsembleMentionEntitySimilarity {

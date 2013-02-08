@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
  * Mention detected in the input text. It is identified uniquely
  * by the combination of the three members docId+mention+characterOffset.
  * 
- * @author Johannes Hoffart
  *
  */
 public class ResultMention implements Comparable<ResultMention>, Serializable {

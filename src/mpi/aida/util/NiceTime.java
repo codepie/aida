@@ -1,7 +1,6 @@
 package mpi.aida.util;
 
 /**
- * @author edwin
  * Contains a method that will create a String from any long
  * saying how many days, hours, minutes ... the time value
  * represents.

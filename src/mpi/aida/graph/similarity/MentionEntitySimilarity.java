@@ -17,7 +17,6 @@ import mpi.experiment.trace.Tracer;
  * 
  * The similarity is a value between 0.0 (dissimilar) and +infinity
  * 
- * @author Johannes Hoffart
  *
  */
 public class MentionEntitySimilarity {

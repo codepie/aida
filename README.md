@@ -270,6 +270,7 @@ The AIDA developers are (in alphabetical order):
 * Johannes Hoffart ( http://www.mpi-inf.mpg.de/~jhoffart )
 * Edwin Lewis-Kelham
 * Dat Ba Nguyen ( http://www.mpi-inf.mpg.de/~datnb )
+* Stephan Seufert ( http://www.mpi-inf.mpg.de/~sseufert )
 * Mohamed Amir Yosef ( http://www.mpi-inf.mpg.de/~mamir )
 
 ## License

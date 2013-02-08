@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
  * Extends the KeyphrasesContext with additional data structures that speed
  * up the computation of keyphrase based coherence (KORE)
  * 
- * @author Johannes Hoffart
  *
  */
 public class FastWeightedKeyphrasesContext extends WeightedKeyphrasesContext {

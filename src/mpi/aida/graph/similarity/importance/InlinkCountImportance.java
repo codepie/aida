@@ -15,7 +15,6 @@ import mpi.database.DBConnection;
  * Measures the importance of an entity by the number of
  * incoming links in Wikipedia/YAGO
  * 
- * @author Johannes Hoffart
  *
  */
 public class InlinkCountImportance extends EntityImportance {

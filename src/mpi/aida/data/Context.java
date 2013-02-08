@@ -12,7 +12,6 @@ import mpi.tokenizer.data.Tokens;
 /**
  * Holds the input document as context representation.
  * 
- * @author Johannes Hoffart
  *
  */
 public class Context {

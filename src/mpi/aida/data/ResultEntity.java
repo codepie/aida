@@ -11,7 +11,6 @@ import java.util.Locale;
  * The entity String is the identifier in YAGO2 
  * (see http://www.yago-knowledge.org)
  * 
- * @author Johannes Hoffart
  *
  */
 public class ResultEntity implements Comparable<ResultEntity>, Serializable {
